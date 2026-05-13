@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Every Unit test must declare what it covers — either with #[CoversClass]
+# (positive) or #[CoversNothing] (intentional). Otherwise PHPUnit's coverage
+# metrics are silently inflated by indirect calls during fixture setup.
+#
+# Usage: bin/ci/covers-class-guard <tests/Unit-dir>...
+set -euo pipefail
+
+if [ "$#" -eq 0 ]; then
+    echo "::error::covers-class-guard requires at least one directory argument"
+    exit 2
+fi
+
+MISSING=""
+for dir in "$@"; do
+    [ -d "$dir" ] || continue
+    while IFS= read -r -d '' f; do
+        if ! grep -q -E 'CoversClass|CoversNothing|CoversFunction' "$f"; then
+            MISSING="${MISSING}"$'\n'"${f}"
+        fi
+    done < <(find "$dir" -type f -name '*Test.php' -print0)
+done
+
+if [ -n "$MISSING" ]; then
+    echo "::error::Every *Test.php under tests/Unit must declare #[CoversClass], #[CoversFunction] or #[CoversNothing]"
+    echo "$MISSING"
+    exit 1
+fi

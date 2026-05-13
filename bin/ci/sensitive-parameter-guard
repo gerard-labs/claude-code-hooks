@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Modern PHP convention — parameters carrying secret material must be annotated
+# with #[\SensitiveParameter] so they're redacted from stack traces.
+#
+# Scope: scalar parameters typed `string` or untyped, named like a secret.
+# Object-typed parameters (TokenInterface, ResetPasswordToken, etc.) are NOT
+# the redaction target — they're domain values, not raw secrets.
+#
+# Usage: bin/ci/sensitive-parameter-guard <dir>...
+set -euo pipefail
+
+if [ "$#" -eq 0 ]; then
+    echo "::error::sensitive-parameter-guard requires at least one directory argument"
+    exit 2
+fi
+
+# Match function signatures of the form:
+#   string $token, $bearer, ?string $secret, $apiKey, string $password
+# but NOT object types (anything starting with an uppercase letter or a backslash).
+# Captures the line for reporting; the SensitiveParameter check filters legit cases.
+OFFENDERS=""
+for dir in "$@"; do
+    [ -d "$dir" ] || continue
+    FOUND=$(grep -nEr --include='*.php' --binary-files=without-match \
+        '(\(|,)[[:space:]]*(\?)?(string|mixed)?[[:space:]]*\$(token|bearer|secret|apiKey|password)\b' \
+        "$dir" 2>/dev/null \
+        | grep -v 'SensitiveParameter' \
+        || true)
+    if [ -n "$FOUND" ]; then
+        OFFENDERS="${OFFENDERS}"$'\n'"${FOUND}"
+    fi
+done
+
+if [ -n "$OFFENDERS" ]; then
+    echo "::error::Modern PHP convention — sensitive scalar parameter names must carry #[\\SensitiveParameter]"
+    echo "$OFFENDERS"
+    exit 1
+fi

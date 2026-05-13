@@ -1,0 +1,24 @@
+{
+    "session_id": "00000000-0000-0000-0000-000000000000",
+    "transcript_path": "/tmp/[REDACTED].jsonl",
+    "cwd": "/tmp/[REDACTED]",
+    "permission_mode": "bypassPermissions",
+    "agent_id": "agent_REDACTED",
+    "agent_type": "lead-developer",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Skill",
+    "tool_input": {
+        "skill": "[REDACTED]"
+    },
+    "tool_response": {
+        "success": true,
+        "commandName": "[REDACTED]",
+        "allowedTools": [
+            "[REDACTED]",
+            "[REDACTED]",
+            "[REDACTED]"
+        ]
+    },
+    "tool_use_id": "toolu_REDACTED",
+    "duration_ms": 9
+}

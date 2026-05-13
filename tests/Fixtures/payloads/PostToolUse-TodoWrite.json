@@ -1,0 +1,60 @@
+{
+    "session_id": "00000000-0000-0000-0000-000000000000",
+    "transcript_path": "/tmp/[REDACTED].jsonl",
+    "cwd": "/tmp/[REDACTED]",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "TodoWrite",
+    "tool_input": {
+        "todos": [
+            {
+                "content": "[REDACTED]",
+                "status": "[REDACTED]",
+                "activeForm": "[REDACTED]"
+            },
+            {
+                "content": "[REDACTED]",
+                "status": "[REDACTED]",
+                "activeForm": "[REDACTED]"
+            },
+            {
+                "content": "[REDACTED]",
+                "status": "[REDACTED]",
+                "activeForm": "[REDACTED]"
+            },
+            {
+                "content": "[REDACTED]",
+                "status": "[REDACTED]",
+                "activeForm": "[REDACTED]"
+            }
+        ]
+    },
+    "tool_response": {
+        "oldTodos": [],
+        "newTodos": [
+            {
+                "content": "[REDACTED]",
+                "status": "[REDACTED]",
+                "activeForm": "[REDACTED]"
+            },
+            {
+                "content": "[REDACTED]",
+                "status": "[REDACTED]",
+                "activeForm": "[REDACTED]"
+            },
+            {
+                "content": "[REDACTED]",
+                "status": "[REDACTED]",
+                "activeForm": "[REDACTED]"
+            },
+            {
+                "content": "[REDACTED]",
+                "status": "[REDACTED]",
+                "activeForm": "[REDACTED]"
+            }
+        ],
+        "verificationNudgeNeeded": false
+    },
+    "tool_use_id": "toolu_REDACTED",
+    "duration_ms": 1
+}

@@ -1,0 +1,23 @@
+{
+    "session_id": "00000000-0000-0000-0000-000000000000",
+    "transcript_path": "/tmp/[REDACTED].jsonl",
+    "cwd": "/tmp/[REDACTED]",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Read",
+    "tool_input": {
+        "file_path": "[REDACTED]"
+    },
+    "tool_response": {
+        "type": "[REDACTED]",
+        "file": {
+            "filePath": "[REDACTED]",
+            "content": "[REDACTED]",
+            "numLines": 401,
+            "startLine": 1,
+            "totalLines": 401
+        }
+    },
+    "tool_use_id": "toolu_REDACTED",
+    "duration_ms": 1
+}

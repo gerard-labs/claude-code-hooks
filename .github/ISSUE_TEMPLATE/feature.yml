@@ -1,0 +1,28 @@
+name: ✨ Feature request
+description: Propose new behaviour or a non-bug improvement
+title: "feat: "
+labels: ["enhancement", "triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem this solves
+      description: What's the user pain or developer friction today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Sketch the desired behaviour. Include API shape if relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What else did you weigh, and why isn't it good enough?
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context

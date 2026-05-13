@@ -1,0 +1,36 @@
+name: 📡 Doc-drift follow-up
+description: Track an Anthropic Claude Code spec change detected by the daily drift job
+title: "doc-drift: "
+labels: ["doc-drift", "automated", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template when a `doc-drift` job opened an automated issue and
+        you're capturing the human follow-up (DTO update, snapshot rebless,
+        conformance test rewrite). The automated job opens its own issues —
+        this is for the back-and-forth around the resulting fix.
+  - type: input
+    id: drift-issue
+    attributes:
+      label: Linked drift issue
+      description: Issue number opened by the daily job (e.g. #123)
+    validations:
+      required: true
+  - type: textarea
+    id: events
+    attributes:
+      label: Events impacted
+      description: List the new / changed / removed event names.
+    validations:
+      required: true
+  - type: textarea
+    id: plan
+    attributes:
+      label: Plan
+      description: |
+        - [ ] Add / rename / remove DTO under `src/Event/`
+        - [ ] Update factory dispatch in `HookEventFactory`
+        - [ ] Refresh fixture under `tests/Fixtures/payloads/`
+        - [ ] Re-bless snapshot via `bin/extract-anthropic-spec`
+        - [ ] Update CHANGELOG.md

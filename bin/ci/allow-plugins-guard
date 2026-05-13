@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Composer allow-plugins drift guard — every package exposes a small, audited
+# allow-list. Composer 2.x records which plugins each package authorises to run
+# scripts, and silent additions are an indirect supply-chain vector.
+#
+# Usage: bin/ci/allow-plugins-guard <composer.json> <expected-json>
+#   <composer.json>:  path to the package's composer.json
+#   <expected-json>:  expected JSON object, e.g. '{"a":true,"b":true}'
+set -euo pipefail
+
+if [ "$#" -ne 2 ]; then
+    echo "::error::allow-plugins-guard <composer.json> <expected-json>" >&2
+    exit 2
+fi
+
+COMPOSER_JSON="$1"
+EXPECTED="$2"
+
+if [ ! -f "$COMPOSER_JSON" ]; then
+    echo "::error::allow-plugins-guard: $COMPOSER_JSON not found"
+    exit 2
+fi
+
+ACTUAL=$(jq -S '.config["allow-plugins"]' "$COMPOSER_JSON")
+EXPECTED_SORTED=$(echo "$EXPECTED" | jq -S '.')
+
+if [ "$ACTUAL" != "$EXPECTED_SORTED" ]; then
+    echo "::error::allow-plugins drift in $COMPOSER_JSON"
+    echo "Expected: $EXPECTED_SORTED"
+    echo "Actual:   $ACTUAL"
+    exit 1
+fi

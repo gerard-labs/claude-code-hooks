@@ -1,0 +1,25 @@
+{
+    "session_id": "00000000-0000-0000-0000-000000000000",
+    "transcript_path": "/tmp/[REDACTED].jsonl",
+    "cwd": "/tmp/[REDACTED]",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+        "command": "[REDACTED]",
+        "description": "[REDACTED]",
+        "dangerouslyDisableSandbox": true
+    },
+    "tool_response": {
+        "stdout": "[REDACTED]",
+        "stderr": "[REDACTED]",
+        "interrupted": false,
+        "isImage": false,
+        "noOutputExpected": false,
+        "dangerouslyDisableSandbox": true
+    },
+    "tool_use_id": "toolu_REDACTED",
+    "duration_ms": 96,
+    "agent_id": "agent_REDACTED",
+    "agent_type": "lead-developer"
+}

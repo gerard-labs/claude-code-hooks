@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# SEC-03 — `Yaml::PARSE_OBJECT*` flags allow stdClass instantiation during
+# YAML parsing, which is an unmarshalling-gadget vector. They must NOT appear
+# in source code (comments documenting the rule are allowed).
+#
+# Usage: bin/ci/yaml-parse-object-guard <dir>...
+set -euo pipefail
+
+if [ "$#" -eq 0 ]; then
+    echo "::error::yaml-parse-object-guard requires at least one directory argument"
+    exit 2
+fi
+
+OFFENDERS=""
+for dir in "$@"; do
+    [ -d "$dir" ] || continue
+    # A line whose first non-whitespace char is `*`, `//`, or `#` is a comment.
+    FOUND=$(grep -nEr --include='*.php' --binary-files=without-match \
+        'Yaml::PARSE_OBJECT' "$dir" 2>/dev/null \
+        | grep -vE ':[[:space:]]*(\*|//|#)' \
+        || true)
+    if [ -n "$FOUND" ]; then
+        OFFENDERS="${OFFENDERS}"$'\n'"${FOUND}"
+    fi
+done
+
+if [ -n "$OFFENDERS" ]; then
+    echo "::error::SEC-03 — Yaml::PARSE_OBJECT* flags are forbidden"
+    echo "$OFFENDERS"
+    exit 1
+fi

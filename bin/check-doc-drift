@@ -1,0 +1,146 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Gerard\ClaudeCodeHooks\Support\JsonDecoder;
+
+$autoload = __DIR__ . '/../vendor/autoload.php';
+if (!\is_file($autoload)) {
+    fwrite(\STDERR, "ERROR: composer autoloader not found, run `composer install`\n");
+    exit(2);
+}
+require $autoload;
+
+$argv = $_SERVER['argv'] ?? [];
+\assert(\is_array($argv));
+
+$current = null;
+$snapshot = null;
+$output = null;
+
+for ($i = 1; $i < \count($argv); ++$i) {
+    $arg = $argv[$i];
+
+    if ($arg === '--current' && isset($argv[$i + 1])) {
+        $current = (string) $argv[++$i];
+    } elseif ($arg === '--snapshot' && isset($argv[$i + 1])) {
+        $snapshot = (string) $argv[++$i];
+    } elseif ($arg === '--output' && isset($argv[$i + 1])) {
+        $output = (string) $argv[++$i];
+    }
+}
+
+if ($current === null || $snapshot === null) {
+    fwrite(\STDERR, "Usage: check-doc-drift --current <path> --snapshot <path> [--output <path>]\n");
+    exit(2);
+}
+if (!\is_file($current) || !\is_file($snapshot)) {
+    fwrite(\STDERR, "Either --current or --snapshot does not exist on disk\n");
+    exit(2);
+}
+
+try {
+    $currentRaw = \file_get_contents($current);
+    $snapshotRaw = \file_get_contents($snapshot);
+
+    if ($currentRaw === false || $snapshotRaw === false) {
+        fwrite(\STDERR, "Cannot read input files\n");
+        exit(2);
+    }
+    $cur = JsonDecoder::decode($currentRaw, $current);
+    $snap = JsonDecoder::decode($snapshotRaw, $snapshot);
+} catch (Throwable $e) {
+    fwrite(\STDERR, "parse error: {$e->getMessage()}\n");
+    exit(2);
+}
+
+$curEvents = $cur['events'] ?? [];
+$snapEvents = $snap['events'] ?? [];
+
+if (!\is_array($curEvents) || \array_is_list($curEvents)) {
+    fwrite(\STDERR, "events must be an associative array in --current\n");
+    exit(2);
+}
+if (!\is_array($snapEvents) || \array_is_list($snapEvents)) {
+    fwrite(\STDERR, "events must be an associative array in --snapshot\n");
+    exit(2);
+}
+
+[$curEvents, $skippedCur] = sanitiseEventNames($curEvents);
+[$snapEvents, $skippedSnap] = sanitiseEventNames($snapEvents);
+$skippedTotal = $skippedCur + $skippedSnap;
+
+$added = \array_diff(\array_keys($curEvents), \array_keys($snapEvents));
+$removed = \array_diff(\array_keys($snapEvents), \array_keys($curEvents));
+$changed = [];
+
+foreach (\array_intersect(\array_keys($curEvents), \array_keys($snapEvents)) as $name) {
+    if ($curEvents[$name] !== $snapEvents[$name]) {
+        $changed[] = (string) $name;
+    }
+}
+
+if ($added === [] && $removed === [] && $changed === []) {
+    if ($output !== null) {
+        \file_put_contents($output, "No drift detected.\n");
+    }
+    exit(0);
+}
+
+$report = "## Drift summary\n\n";
+
+if ($added !== []) {
+    $report .= "### Added events\n\n";
+    foreach ($added as $name) {
+        $report .= "- `{$name}`\n";
+    }
+    $report .= "\n";
+}
+if ($removed !== []) {
+    $report .= "### Removed events\n\n";
+    foreach ($removed as $name) {
+        $report .= "- `{$name}`\n";
+    }
+    $report .= "\n";
+}
+if ($changed !== []) {
+    $report .= "### Modified events\n\n";
+    foreach ($changed as $name) {
+        $report .= "- `{$name}`\n";
+    }
+    $report .= "\n";
+}
+
+if ($skippedTotal > 0) {
+    $report .= "> ⚠ skipped {$skippedTotal} malformed event names\n\n";
+}
+
+if ($output !== null) {
+    \file_put_contents($output, $report);
+} else {
+    fwrite(\STDOUT, $report);
+}
+
+exit(1);
+
+/**
+ * @param array<array-key, mixed> $events
+ *
+ * @return array{0: array<string, mixed>, 1: int}
+ */
+function sanitiseEventNames(array $events): array
+{
+    $clean = [];
+    $skipped = 0;
+    foreach ($events as $name => $body) {
+        if (!\is_string($name) || \preg_match('/^[A-Za-z][A-Za-z0-9_]{0,63}$/', $name) !== 1) {
+            ++$skipped;
+
+            continue;
+        }
+        $clean[$name] = $body;
+    }
+
+    return [$clean, $skipped];
+}

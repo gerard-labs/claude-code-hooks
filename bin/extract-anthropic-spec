@@ -1,0 +1,138 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Gerard\ClaudeCodeHooks\Conformance\AnthropicSpecExtractor;
+use Gerard\ClaudeCodeHooks\Exception\ExtractionFailedException;
+use Symfony\Component\HttpClient\HttpClient;
+
+$autoload = __DIR__ . '/../vendor/autoload.php';
+if (!\is_file($autoload)) {
+    fwrite(\STDERR, "ERROR: composer autoloader not found, run `composer install`\n");
+    exit(2);
+}
+require $autoload;
+
+$argv = $_SERVER['argv'] ?? [];
+\assert(\is_array($argv));
+
+$outputPath = null;
+$fixturePath = null;
+$allowOutsideCwd = false;
+
+for ($i = 1; $i < \count($argv); ++$i) {
+    $arg = $argv[$i];
+    if ($arg === '--output' && isset($argv[$i + 1])) {
+        $outputPath = (string) $argv[++$i];
+    } elseif ($arg === '--from-html-fixture' && isset($argv[$i + 1])) {
+        $fixturePath = (string) $argv[++$i];
+    } elseif ($arg === '--allow-outside-cwd') {
+        $allowOutsideCwd = true;
+    }
+}
+
+if ($outputPath !== null) {
+    if (\str_contains($outputPath, '..')) {
+        fwrite(\STDERR, "SEC-07: --output path may not contain '..'\n");
+        exit(2);
+    }
+    $absolute = (\str_starts_with($outputPath, '/'))
+        ? $outputPath
+        : (\getcwd() ?: '.') . \DIRECTORY_SEPARATOR . $outputPath;
+    $parent = \dirname($absolute);
+
+    if (!\is_dir($parent) && !@\mkdir($parent, 0o755, true) && !\is_dir($parent)) {
+        fwrite(\STDERR, "SEC-07: cannot create output parent directory\n");
+        exit(2);
+    }
+    $parentReal = \realpath($parent);
+    $cwdReal = \realpath(\getcwd() ?: '.');
+
+    if ($parentReal === false || $cwdReal === false) {
+        fwrite(\STDERR, "SEC-07: cannot resolve output path\n");
+        exit(2);
+    }
+    if (!$allowOutsideCwd && !\str_starts_with($parentReal, $cwdReal)) {
+        fwrite(\STDERR, "SEC-07: output path outside cwd (use --allow-outside-cwd to override)\n");
+        exit(2);
+    }
+    $outputPath = $parentReal . \DIRECTORY_SEPARATOR . \basename($absolute);
+}
+
+$client = HttpClient::create([
+    'verify_peer' => true,
+    'verify_host' => true,
+    'timeout' => 10,
+    'max_duration' => 30,
+    'max_redirects' => 0,
+    'headers' => [
+        'User-Agent' => 'gerard-doc-drift/1.0 (+https://github.com/gerard-labs/claude-code-hooks/issues)',
+    ],
+]);
+
+try {
+    $extractor = new AnthropicSpecExtractor($client);
+
+    if ($fixturePath !== null) {
+        if (!\is_file($fixturePath) || !\is_readable($fixturePath)) {
+            fwrite(\STDERR, "SEC-07: --from-html-fixture path not readable\n");
+            exit(2);
+        }
+        $html = (string) \file_get_contents($fixturePath);
+        $spec = $extractor->extractFromHtml('https://code.claude.com/docs/en/hooks', $html);
+    } else {
+        $spec = $extractor->extract([
+            'https://code.claude.com/docs/en/hooks',
+        ]);
+    }
+
+    if ($spec['events'] === []) {
+        fwrite(\STDERR, "Extractor returned zero events — parse strategy failure, NOT drift.\n");
+        exit(2);
+    }
+
+    $json = \json_encode($spec, \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR);
+    \assert($json !== false);
+
+    // Canonicalize: 2-space indent + sorted keys recursively for stable diff.
+    $json = canonicalize($json) . "\n";
+
+    if ($outputPath !== null) {
+        \file_put_contents($outputPath, $json);
+    } else {
+        fwrite(\STDOUT, $json);
+    }
+    exit(0);
+} catch (ExtractionFailedException $e) {
+    fwrite(\STDERR, "extractor failure: {$e->getMessage()}\n");
+    exit(2);
+}
+
+function canonicalize(string $json): string
+{
+    /** @var mixed $decoded */
+    $decoded = \json_decode($json, true, flags: \JSON_THROW_ON_ERROR);
+    $decoded = sortKeysRecursive($decoded);
+
+    $encoded = \json_encode($decoded, \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR);
+    \assert(\is_string($encoded));
+
+    return $encoded;
+}
+
+function sortKeysRecursive(mixed $value): mixed
+{
+    if (!\is_array($value)) {
+        return $value;
+    }
+    if (\array_is_list($value)) {
+        return \array_map(\sortKeysRecursive(...), $value);
+    }
+    \ksort($value);
+    foreach ($value as $k => $v) {
+        $value[$k] = sortKeysRecursive($v);
+    }
+
+    return $value;
+}

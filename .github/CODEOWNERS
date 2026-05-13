@@ -1,0 +1,6 @@
+# Code owners — automatic review request routing.
+#
+# Syntax: <pattern> <owner1> <owner2>...
+# Last matching pattern wins.
+
+*               @sdieunidou

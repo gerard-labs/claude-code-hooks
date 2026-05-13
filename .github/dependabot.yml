@@ -1,0 +1,47 @@
+version: 2
+
+# Grouped weekly updates per ecosystem. Major bumps stay separate (manual review)
+# while minor/patch are bundled to keep PR noise low.
+
+updates:
+  # ── PHP packages ──────────────────────────────────────────────────────────
+  - package-ecosystem: "composer"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    target-branch: "main"
+    labels:
+      - "dependencies"
+    groups:
+      static-analysis:
+        patterns:
+          - "phpstan/*"
+          - "vimeo/psalm"
+          - "psalm/*"
+      dev-tools:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ── GitHub Actions (SHA-pinned, dependabot bumps to new SHA) ──────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    target-branch: "main"
+    labels:
+      - "dependencies"
+      - "area/ci"
+    groups:
+      gh-actions-core:
+        patterns:
+          - "actions/*"
+      gh-actions-third-party:
+        patterns:
+          - "shivammathur/*"
+          - "peter-evans/*"

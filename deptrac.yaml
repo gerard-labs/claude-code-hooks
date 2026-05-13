@@ -1,0 +1,54 @@
+deptrac:
+    paths:
+        - src
+    layers:
+        - name: Event
+          collectors:
+              - { type: directory, value: src/Event/.* }
+        - name: Response
+          collectors:
+              - { type: directory, value: src/Response/.* }
+        - name: Resolver
+          collectors:
+              - { type: directory, value: src/Resolver/.* }
+        - name: Transcript
+          collectors:
+              - { type: directory, value: src/Transcript/.* }
+        - name: Scanner
+          collectors:
+              - { type: directory, value: src/Scanner/.* }
+        - name: Cost
+          collectors:
+              - { type: directory, value: src/Cost/.* }
+        - name: Linter
+          collectors:
+              - { type: directory, value: src/Linter/.* }
+        - name: Builder
+          collectors:
+              - { type: directory, value: src/Builder/.* }
+        - name: Conformance
+          collectors:
+              - { type: directory, value: src/Conformance/.* }
+        - name: Support
+          collectors:
+              - { type: directory, value: src/Support/.* }
+        - name: Exception
+          collectors:
+              - { type: directory, value: src/Exception/.* }
+        - name: Vendor
+          collectors:
+              - { type: classLike, value: ^Symfony\\.* }
+              - { type: classLike, value: ^Psr\\.* }
+
+    ruleset:
+        Exception: [Vendor]
+        Support: [Exception, Vendor]
+        Event: [Support, Exception, Vendor]
+        Response: [Event, Exception, Vendor]
+        Resolver: [Event, Support, Exception, Vendor]
+        Transcript: [Support, Exception, Vendor]
+        Scanner: [Support, Exception, Vendor]
+        Cost: [Transcript, Exception, Vendor]
+        Linter: [Event, Support, Exception, Vendor]
+        Builder: [Event, Response, Exception, Vendor]
+        Conformance: [Event, Response, Support, Exception, Vendor]

@@ -1,0 +1,62 @@
+{
+    "session_id": "00000000-0000-0000-0000-000000000000",
+    "transcript_path": "/tmp/[REDACTED].jsonl",
+    "cwd": "/tmp/[REDACTED]",
+    "permission_mode": "bypassPermissions",
+    "agent_id": "agent_REDACTED",
+    "agent_type": "lead-developer",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Edit",
+    "tool_input": {
+        "file_path": "[REDACTED]",
+        "old_string": "[REDACTED]",
+        "new_string": "[REDACTED]",
+        "replace_all": false
+    },
+    "tool_response": {
+        "filePath": "[REDACTED]",
+        "oldString": "[REDACTED]",
+        "newString": "[REDACTED]",
+        "originalFile": "[REDACTED]",
+        "structuredPatch": [
+            {
+                "oldStart": 42,
+                "oldLines": 4,
+                "newStart": 42,
+                "newLines": 26,
+                "lines": [
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]",
+                    "[REDACTED]"
+                ]
+            }
+        ],
+        "userModified": false,
+        "replaceAll": false
+    },
+    "tool_use_id": "toolu_REDACTED",
+    "duration_ms": 14
+}

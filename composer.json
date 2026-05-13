@@ -1,0 +1,115 @@
+{
+    "name": "gerard/claude-code-hooks",
+    "description": "Type-safe Claude Code hooks for PHP — 29 events, multi-source resolver, transcript reader, linter, doc-drift conformance.",
+    "license": "MIT",
+    "type": "library",
+    "keywords": [
+        "agents",
+        "ai",
+        "anthropic",
+        "claude-code",
+        "hooks",
+        "observability"
+    ],
+    "authors": [
+        {
+            "name": "Sebastien Dieunidou",
+            "email": "s.dieunidou@gmail.com"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/gerard-labs/claude-code-hooks/issues",
+        "source": "https://github.com/gerard-labs/claude-code-hooks"
+    },
+    "require": {
+        "php": "^8.3",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "psr/log": "^3.0",
+        "symfony/http-client": "^7.0",
+        "symfony/http-client-contracts": "^3.0",
+        "symfony/yaml": "^7.0"
+    },
+    "require-dev": {
+        "deptrac/deptrac": "^4.6",
+        "ergebnis/composer-normalize": "^2.45",
+        "ergebnis/phpstan-rules": "^2.0",
+        "friendsofphp/php-cs-fixer": "^3.65",
+        "infection/infection": "^0.30 || ^0.31 || ^0.32",
+        "maglnet/composer-require-checker": "^4.16",
+        "phpstan/phpstan": "^2.0",
+        "phpstan/phpstan-deprecation-rules": "^2.0",
+        "phpstan/phpstan-phpunit": "^2.0",
+        "phpstan/phpstan-strict-rules": "^2.0",
+        "phpunit/phpunit": "^11.5 || ^12.0",
+        "psalm/plugin-phpunit": "^0.19",
+        "rector/rector": "^2.0",
+        "roave/security-advisories": "dev-latest",
+        "vimeo/psalm": "^6.0"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Gerard\\ClaudeCodeHooks\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Gerard\\ClaudeCodeHooks\\Tests\\": "tests/"
+        }
+    },
+    "bin": [
+        "bin/check-coverage",
+        "bin/check-doc-drift",
+        "bin/extract-anthropic-spec"
+    ],
+    "config": {
+        "allow-plugins": {
+            "ergebnis/composer-normalize": true,
+            "infection/extension-installer": true,
+            "phpstan/extension-installer": true
+        },
+        "audit": {
+            "abandoned": "report"
+        },
+        "optimize-autoloader": true,
+        "platform": {
+            "php": "8.3.16"
+        },
+        "preferred-install": "dist",
+        "sort-packages": true
+    },
+    "scripts": {
+        "audit": "@composer audit",
+        "cs": "php-cs-fixer fix --dry-run --diff",
+        "cs:fix": "php-cs-fixer fix",
+        "deptrac": "deptrac analyse --fail-on-uncovered",
+        "doc-drift": "bin/check-doc-drift",
+        "extract-spec": "bin/extract-anthropic-spec",
+        "phpstan": "phpstan analyse --error-format=table",
+        "psalm": "psalm",
+        "qa": [
+            "@cs",
+            "@phpstan",
+            "@psalm",
+            "@deptrac",
+            "@test:unit",
+            "@audit"
+        ],
+        "qa:full": [
+            "@qa",
+            "@test:integration",
+            "@test:conformance",
+            "@test:mutation"
+        ],
+        "rector": "rector --dry-run",
+        "rector:fix": "rector",
+        "test": "phpunit",
+        "test:conformance": "phpunit --testsuite=conformance",
+        "test:coverage": "phpunit --testsuite=unit,integration --coverage-clover=var/coverage/clover.xml --coverage-xml=var/coverage-xml",
+        "test:integration": "phpunit --testsuite=integration",
+        "test:mutation": "infection --threads=max --min-msi=80 --min-covered-msi=85 --skip-initial-tests --coverage=var/coverage-xml",
+        "test:unit": "phpunit --testsuite=unit"
+    }
+}

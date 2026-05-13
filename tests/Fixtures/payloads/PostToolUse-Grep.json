@@ -1,0 +1,26 @@
+{
+    "session_id": "00000000-0000-0000-0000-000000000000",
+    "transcript_path": "/tmp/[REDACTED].jsonl",
+    "cwd": "/tmp/[REDACTED]",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Grep",
+    "tool_input": {
+        "pattern": "[REDACTED]",
+        "path": "/tmp/[REDACTED]",
+        "output_mode": "content",
+        "-n": true,
+        "head_limit": 30
+    },
+    "tool_response": {
+        "mode": "content",
+        "filenames": [],
+        "numFiles": 1,
+        "numLines": 12,
+        "content": "[REDACTED]"
+    },
+    "tool_use_id": "toolu_REDACTED",
+    "duration_ms": 41,
+    "agent_id": "agent_REDACTED",
+    "agent_type": "lead-developer"
+}

@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# SEC-07/16 — forbid raw exec-family functions in source/tests/bin.
+# Code that needs to spawn a process must go through Symfony\Component\Process
+# (timeout enforcement, stderr capture, escape).
+#
+# Usage: bin/ci/exec-family-guard <dir>...
+set -euo pipefail
+
+if [ "$#" -eq 0 ]; then
+    echo "::error::exec-family-guard requires at least one directory argument"
+    exit 2
+fi
+
+OFFENDERS=""
+for dir in "$@"; do
+    [ -d "$dir" ] || continue
+    # Match calls to exec/shell_exec/passthru/proc_open/popen and the backtick
+    # operator, all of which must be followed by an open paren or terminate a
+    # backtick-string. Single tilde-style backticks inside docblocks are
+    # legitimate prose and excluded by the `\s*\(` anchor on every alternative.
+    # Whitelist `Symfony\Component\Process` so legitimate Process calls pass.
+    FOUND=$(grep -nEr --include='*.php' --binary-files=without-match \
+        '\b(exec|shell_exec|passthru|proc_open|popen|`[^`]+`)[[:space:]]*\(' "$dir" 2>/dev/null \
+        | grep -vE 'Symfony\\Component\\Process' \
+        || true)
+    if [ -n "$FOUND" ]; then
+        OFFENDERS="${OFFENDERS}"$'\n'"${FOUND}"
+    fi
+done
+
+if [ -n "$OFFENDERS" ]; then
+    echo "::error::SEC-07/16 — exec-family functions forbidden (use Symfony\\Component\\Process)"
+    echo "$OFFENDERS"
+    exit 1
+fi

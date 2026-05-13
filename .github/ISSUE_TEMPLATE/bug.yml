@@ -1,0 +1,48 @@
+name: 🐞 Bug report
+description: Something doesn't work as documented
+title: "bug: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. The more concrete the repro, the faster we can fix it.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the actual behaviour.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps. Include exact commands and inputs.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: PHP version, OS, package version, anything relevant.
+      placeholder: |
+        - PHP: 8.3.x
+        - OS: Linux 6.x
+        - gerard/claude-code-hooks: x.y.z
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / stack trace
+      description: Paste the relevant excerpt — redact secrets first.
+      render: shell

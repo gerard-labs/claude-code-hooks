@@ -1,0 +1,31 @@
+{
+    "$schema": "vendor/infection/infection/resources/schema.json",
+    "source": {
+        "directories": ["src"],
+        "excludes": [
+            "Conformance/AnthropicSpecExtractor.php"
+        ]
+    },
+    "logs": {
+        "text": "build/infection/infection.log",
+        "summary": "build/infection/summary.log",
+        "json": "build/infection/infection.json",
+        "perMutator": "build/infection/per-mutator.md",
+        "github": true
+    },
+    "tmpDir": "build/infection/tmp",
+    "minMsi": 80,
+    "minCoveredMsi": 85,
+    "testFramework": "phpunit",
+    "testFrameworkOptions": "--testsuite=unit",
+    "mutators": {
+        "@default": true,
+        "CloneRemoval": false,
+        "ArrayItem": false,
+        "ArrayOneItem": false,
+        "Coalesce": false
+    },
+    "phpUnit": {
+        "configDir": "."
+    }
+}

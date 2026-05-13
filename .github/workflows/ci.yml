@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pull-requests: read
+
+# Cancel superseded runs on the same PR; keep main runs running to completion.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # SHA-pin scan over every workflow file — supply-chain anchor.
+  global-guards:
+    name: Global guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - run: bin/ci/sha-pin-guard
+
+  # Package-scoped security/quality guards (centralised in bin/ci/*).
+  package-guards:
+    name: Package guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - run: bin/ci/exec-family-guard src tests bin
+      - run: bin/ci/yaml-parse-object-guard src
+      - run: bin/ci/sensitive-parameter-guard src
+      - run: bin/ci/secret-shape-guard tests/Fixtures/html tests/Fixtures/payloads
+      - run: bin/ci/covers-class-guard tests/Unit
+      - run: bin/ci/allow-plugins-guard composer.json '{"ergebnis/composer-normalize":true,"infection/extension-installer":true,"phpstan/extension-installer":true}'
+
+  # Lint, static analysis, layered architecture, tests, conformance, mutation.
+  build:
+    name: Build
+    needs: [global-guards, package-guards]
+    uses: ./.github/workflows/_composer-project.yml
+    with:
+      working-directory: .
+      php-versions: '["8.3","8.4"]'
+      run-psalm: true
+      run-rector-dry: true
+      run-conformance: true
+      run-composer-normalize: true
+      coverage-artifact-name: coverage-xml
+
+  # Aggregator status check — the SINGLE required check for branch protection.
+  ci-success:
+    name: CI success
+    if: always()
+    needs:
+      - global-guards
+      - package-guards
+      - build
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Verify no upstream job failed or was cancelled
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS_JSON" | python3 -c '
+          import json, sys
+          needs = json.load(sys.stdin)
+          bad = []
+          for name, info in needs.items():
+              result = info.get("result")
+              if result in ("failure", "cancelled"):
+                  bad.append(f"{name}={result}")
+          if bad:
+              print("Upstream jobs failed: " + ", ".join(bad))
+              sys.exit(1)
+          print("All upstream jobs passed.")
+          '

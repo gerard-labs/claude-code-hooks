@@ -1,0 +1,125 @@
+name: Doc-drift (Anthropic Claude Code spec)
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch: {}
+  push:
+    paths:
+      - 'tests/Fixtures/anthropic-spec/snapshot.json'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    name: Compare current spec to blessed snapshot
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - uses: shivammathur/setup-php@accd6127cb78bee3e8082180cb391013d204ef9f  # v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          extensions: json, mbstring
+          tools: composer:v2
+
+      - name: Cache Composer dependencies
+        id: composer-cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5
+        with:
+          path: vendor
+          key: ${{ runner.os }}-pkg-vendor-${{ hashFiles('composer.json') }}
+          restore-keys: ${{ runner.os }}-pkg-vendor-
+
+      - name: Install dependencies
+        if: steps.composer-cache.outputs.cache-hit != 'true'
+        run: composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader
+
+      - name: Extract live Anthropic spec
+        id: extract
+        run: |
+          mkdir -p build
+          bin/extract-anthropic-spec --output build/current-spec.json
+
+      - name: Compare to blessed snapshot
+        id: drift
+        run: |
+          set +e
+          bin/check-doc-drift \
+            --current build/current-spec.json \
+            --snapshot tests/Fixtures/anthropic-spec/snapshot.json \
+            --output build/drift-report.md
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Run conformance tests against current spec
+        if: steps.drift.outputs.exit == '1'
+        env:
+          CLAUDE_HOOKS_SPEC_FILE: build/current-spec.json
+        run: vendor/bin/phpunit --testsuite=conformance --testdox-text=build/conformance-report.txt
+        continue-on-error: true
+
+      - name: Compose issue body
+        if: steps.drift.outputs.exit == '1'
+        run: |
+          cat > build/issue-body.md << 'EOF'
+          ## Anthropic doc drift detected
+
+          The daily doc-drift check found differences between our blessed
+          snapshot and the live Anthropic Claude Code documentation.
+
+          ### Diff summary
+          EOF
+          cat build/drift-report.md >> build/issue-body.md
+          if [ -f build/conformance-report.txt ]; then
+            printf '\n### Conformance test results\n\n```\n' >> build/issue-body.md
+            cat build/conformance-report.txt >> build/issue-body.md
+            printf '```\n' >> build/issue-body.md
+          fi
+          cat >> build/issue-body.md << 'EOF'
+
+          ### Next steps
+          1. Review the diff above.
+          2. Add or update DTO classes, response builders, and enums as needed.
+          3. Re-bless the snapshot with `bin/extract-anthropic-spec --output tests/Fixtures/anthropic-spec/snapshot.json`.
+          4. Open a PR linking this issue.
+          EOF
+
+      - name: Open or update issue
+        if: steps.drift.outputs.exit == '1'
+        uses: peter-evans/create-issue-from-file@fca9117c27cdc29c6c4db3b86c48e4115a786710  # v6.0.0
+        with:
+          title: 'doc-drift: Anthropic Claude Code spec changed'
+          content-filepath: build/issue-body.md
+          labels: |
+            doc-drift
+            automated
+            triage
+          assignees: |
+            sdieunidou
+
+      - name: Upload drift artifacts
+        if: steps.drift.outputs.exit != '0'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: drift-report
+          path: |
+            build/current-spec.json
+            build/drift-report.md
+            build/conformance-report.txt
+          retention-days: 90
+          if-no-files-found: ignore
+
+      - name: Fail on drift
+        if: steps.drift.outputs.exit == '1'
+        run: |
+          echo "::error::doc-drift detected — see issue and artifacts"
+          exit 1
+
+      - name: Fail on extractor error
+        if: steps.drift.outputs.exit == '2'
+        run: |
+          echo "::error::doc-drift extractor failed (HTTP/parse error). This is NOT a drift — investigate the extractor."
+          exit 2

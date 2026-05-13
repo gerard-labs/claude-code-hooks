@@ -1,0 +1,15 @@
+{
+  "session_id": "00000000-0000-0000-0000-000000000000",
+  "transcript_path": "/tmp/[REDACTED].jsonl",
+  "cwd": "/tmp/[REDACTED]",
+  "permission_mode": "default",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_use_id": "toolu_REDACTED",
+  "tool_input": {
+    "command": "[REDACTED]",
+    "description": "[REDACTED]",
+    "timeout": 10,
+    "run_in_background": false
+  }
+}

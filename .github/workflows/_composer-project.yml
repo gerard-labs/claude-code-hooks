@@ -1,0 +1,260 @@
+name: Composer project
+
+# Reusable workflow driving lint, static analysis, layered architecture, tests
+# with coverage threshold, conformance, and mutation testing — opt-in per stage.
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Path to the sub-project (must contain composer.json)
+        required: false
+        type: string
+        default: '.'
+      php-versions:
+        description: JSON array of PHP versions for the test matrix (e.g. '["8.3","8.4"]')
+        required: false
+        type: string
+        default: '["8.3"]'
+      extensions:
+        description: PHP extensions for setup-php
+        required: false
+        type: string
+        default: 'json, mbstring'
+      run-psalm:
+        description: Run Psalm in addition to PHPStan
+        required: false
+        type: boolean
+        default: false
+      run-rector-dry:
+        description: Run Rector in dry-run mode
+        required: false
+        type: boolean
+        default: false
+      run-deptrac:
+        description: Run Deptrac layer checks
+        required: false
+        type: boolean
+        default: true
+      run-mutation:
+        description: Run Infection mutation testing
+        required: false
+        type: boolean
+        default: true
+      run-conformance:
+        description: Run a `conformance` PHPUnit test suite
+        required: false
+        type: boolean
+        default: false
+      run-composer-normalize:
+        description: Run `composer normalize --dry-run`
+        required: false
+        type: boolean
+        default: false
+      run-coverage-check:
+        description: Run bin/check-coverage against var/coverage/clover.xml
+        required: false
+        type: boolean
+        default: true
+      test-suites:
+        description: PHPUnit --testsuite argument
+        required: false
+        type: string
+        default: 'unit,integration'
+      min-msi:
+        description: Infection minimum MSI
+        required: false
+        type: number
+        default: 80
+      min-covered-msi:
+        description: Infection minimum Covered MSI
+        required: false
+        type: number
+        default: 85
+      coverage-artifact-name:
+        description: Name of the uploaded coverage-xml artifact
+        required: false
+        type: string
+        default: 'coverage-xml'
+
+jobs:
+  lint:
+    name: Lint & guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: ./.github/actions/setup-php-project
+        with:
+          working-directory: ${{ inputs.working-directory }}
+          extensions: ${{ inputs.extensions }}
+
+      - name: composer validate
+        run: composer validate --strict --no-check-lock
+
+      - name: composer normalize (dry-run)
+        if: inputs.run-composer-normalize
+        run: composer normalize --dry-run
+
+      - name: php-cs-fixer (dry-run)
+        run: vendor/bin/php-cs-fixer fix --dry-run --diff
+
+      - name: rector (dry-run)
+        if: inputs.run-rector-dry
+        run: vendor/bin/rector --dry-run --no-progress-bar
+
+      # Library policy: no composer.lock committed (locks belong to the
+      # consuming application). `composer audit` resolves against the
+      # currently installed vendor tree from CI's fresh install.
+      - name: composer audit
+        run: composer audit
+
+      - name: composer-require-checker
+        if: hashFiles(format('{0}/composer-require-checker.json', inputs.working-directory)) != ''
+        run: vendor/bin/composer-require-checker check --config-file=composer-require-checker.json composer.json
+
+  static:
+    name: PHPStan${{ inputs.run-psalm && ' + Psalm' || '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: ./.github/actions/setup-php-project
+        with:
+          working-directory: ${{ inputs.working-directory }}
+          extensions: ${{ inputs.extensions }}
+
+      - name: PHPStan
+        run: vendor/bin/phpstan analyse --error-format=github --memory-limit=512M
+
+      - name: Psalm
+        if: inputs.run-psalm
+        run: vendor/bin/psalm --output-format=github --no-cache
+
+  deptrac:
+    name: Deptrac
+    if: inputs.run-deptrac
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: ./.github/actions/setup-php-project
+        with:
+          working-directory: ${{ inputs.working-directory }}
+          extensions: ${{ inputs.extensions }}
+
+      - name: Deptrac
+        run: vendor/bin/deptrac analyse --formatter=github-actions --fail-on-uncovered
+
+  test:
+    name: Tests on PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ${{ fromJSON(inputs.php-versions) }}
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: ./.github/actions/setup-php-project
+        with:
+          working-directory: ${{ inputs.working-directory }}
+          php-version: ${{ matrix.php }}
+          coverage: pcov
+          extensions: ${{ inputs.extensions }}
+
+      - name: PHPUnit (--testsuite=${{ inputs.test-suites }})
+        run: vendor/bin/phpunit --testsuite=${{ inputs.test-suites }} --coverage-clover=var/coverage/clover.xml --coverage-xml=var/coverage-xml --log-junit=var/coverage-xml/junit.xml
+
+      - name: Coverage threshold (100% class & method)
+        if: inputs.run-coverage-check
+        run: bin/check-coverage var/coverage/clover.xml
+
+      - name: Upload coverage XML (PHP ${{ matrix.php }})
+        if: matrix.php == fromJSON(inputs.php-versions)[0]
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: ${{ inputs.coverage-artifact-name }}
+          path: ${{ inputs.working-directory }}/var/coverage-xml
+
+      - name: Upload JUnit (PHP ${{ matrix.php }})
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: junit-${{ inputs.coverage-artifact-name }}-php${{ matrix.php }}
+          path: ${{ inputs.working-directory }}/var/coverage-xml/junit.xml
+          if-no-files-found: ignore
+
+  conformance:
+    name: Conformance
+    if: inputs.run-conformance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: ./.github/actions/setup-php-project
+        with:
+          working-directory: ${{ inputs.working-directory }}
+          extensions: ${{ inputs.extensions }}
+
+      - name: Conformance tests
+        # `coverage: none` means PHPUnit has no driver; phpunit.xml.dist sets
+        # failOnWarning=true so the implicit "No code coverage driver" warning
+        # would otherwise abort the run before any test executes.
+        run: vendor/bin/phpunit --testsuite=conformance --no-coverage
+
+  mutation:
+    name: Mutation testing
+    if: inputs.run-mutation
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: ./.github/actions/setup-php-project
+        with:
+          working-directory: ${{ inputs.working-directory }}
+          coverage: pcov
+          extensions: ${{ inputs.extensions }}
+
+      - name: Download coverage XML
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: ${{ inputs.coverage-artifact-name }}
+          path: ${{ inputs.working-directory }}/var/coverage-xml
+
+      - name: Run Infection
+        run: |
+          # Infection's --skip-initial-tests requires a non-empty coverage
+          # index; an empty Unit suite produces a placeholder index.xml with
+          # no <file> entries, which makes Infection abort. Skip gracefully
+          # during the bootstrap phase.
+          if ! grep -q '<file' var/coverage-xml/index.xml 2>/dev/null; then
+            echo "::warning::No covered source files — skipping Infection mutation testing"
+            exit 0
+          fi
+          vendor/bin/infection \
+            --threads=max \
+            --min-msi=${{ inputs.min-msi }} \
+            --min-covered-msi=${{ inputs.min-covered-msi }} \
+            --skip-initial-tests \
+            --coverage=var/coverage-xml \
+            --logger-github

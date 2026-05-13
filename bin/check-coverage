@@ -1,0 +1,71 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+$cloverPath = $argv[1] ?? __DIR__ . '/../var/coverage/clover.xml';
+
+if (!file_exists($cloverPath)) {
+    fwrite(STDERR, "ERROR: clover file not found at '{$cloverPath}'\nRun 'make coverage-unit' or check that paratest ran with --coverage-clover.\n");
+    exit(1);
+}
+
+// LIBXML_NONET disables network access during XML parsing (XXE mitigation).
+// Entities are NOT expanded by default (LIBXML_NOENT is not passed), so XXE via local
+// file inclusion is also mitigated. We do not use libxml_set_external_entity_loader
+// because a null-returning callback prevents the main document from loading too.
+libxml_use_internal_errors(true);
+
+$xml = simplexml_load_file($cloverPath, 'SimpleXMLElement', LIBXML_NONET);
+if ($xml === false) {
+    fwrite(STDERR, "ERROR: failed to parse clover XML at '{$cloverPath}'\n");
+    exit(1);
+}
+
+$m = $xml->project->metrics;
+$totalClasses   = (int) ($m['classes']        ?? 0);
+$totalMethods   = (int) ($m['methods']        ?? 0);
+$coveredMethods = (int) ($m['coveredmethods'] ?? 0);
+
+// PHPUnit's clover writer does not emit `coveredclasses` at the project metrics level,
+// so we derive it from per-file <class><metrics>: a class counts as covered when it
+// declares at least one method and every declared method is covered.
+$coveredClasses = 0;
+foreach ($xml->xpath('//file/class/metrics') ?: [] as $classMetrics) {
+    $declared = (int) ($classMetrics['methods']        ?? 0);
+    $covered  = (int) ($classMetrics['coveredmethods'] ?? 0);
+    if ($declared > 0 && $covered === $declared) {
+        ++$coveredClasses;
+    }
+}
+
+// Empty suite: no classes yet — pass with warning rather than fail (supports project bootstrap).
+// Remove this guard once the Unit suite contains at least one class.
+if ($totalClasses === 0 && $totalMethods === 0) {
+    fwrite(STDOUT, "WARNING: no classes found in coverage report — threshold check skipped\n");
+    exit(0);
+}
+
+$failures = [];
+
+if ($totalClasses > 0 && $coveredClasses < $totalClasses) {
+    $failures[] = sprintf(
+        'Class coverage:  %d/%d (%.2f%%) — expected 100%%',
+        $coveredClasses, $totalClasses, $coveredClasses / $totalClasses * 100
+    );
+}
+
+if ($totalMethods > 0 && $coveredMethods < $totalMethods) {
+    $failures[] = sprintf(
+        'Method coverage: %d/%d (%.2f%%) — expected 100%%',
+        $coveredMethods, $totalMethods, $coveredMethods / $totalMethods * 100
+    );
+}
+
+if ($failures !== []) {
+    fwrite(STDERR, implode("\n", $failures) . "\n");
+    exit(1);
+}
+
+fwrite(STDOUT, "Coverage OK: {$coveredClasses}/{$totalClasses} classes, {$coveredMethods}/{$totalMethods} methods (100%)\n");
+exit(0);

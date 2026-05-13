@@ -1,0 +1,59 @@
+name: Set up PHP + composer install (cached)
+description: |
+  Single-source-of-truth installer for PHP projects.
+  Composes shivammathur/setup-php + actions/cache + composer install.
+  Cache key is bound to (working-directory, PHP version, composer.json) — no
+  lockfile is committed for this library, so the manifest is the cache
+  identity.
+
+inputs:
+  working-directory:
+    description: Path to the project (must contain composer.json)
+    required: false
+    default: '.'
+  php-version:
+    description: PHP version to install
+    required: false
+    default: '8.3'
+  coverage:
+    description: Coverage driver (none, pcov, xdebug)
+    required: false
+    default: 'none'
+  extensions:
+    description: Comma-separated list of PHP extensions
+    required: false
+    default: 'json, mbstring'
+  tools:
+    description: Comma-separated list of composer tools (e.g. composer:v2)
+    required: false
+    default: 'composer:v2'
+  composer-flags:
+    description: Extra flags for `composer install`
+    required: false
+    default: '--prefer-dist --no-interaction --no-progress --optimize-autoloader'
+
+runs:
+  using: composite
+  steps:
+    - name: Set up PHP ${{ inputs.php-version }}
+      uses: shivammathur/setup-php@accd6127cb78bee3e8082180cb391013d204ef9f  # v2
+      with:
+        php-version: ${{ inputs.php-version }}
+        coverage: ${{ inputs.coverage }}
+        extensions: ${{ inputs.extensions }}
+        tools: ${{ inputs.tools }}
+
+    - name: Cache Composer vendor (${{ inputs.working-directory }} @ PHP ${{ inputs.php-version }})
+      id: composer-cache
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5
+      with:
+        path: ${{ inputs.working-directory }}/vendor
+        key: ${{ runner.os }}-php${{ inputs.php-version }}-${{ inputs.working-directory }}-${{ hashFiles(format('{0}/composer.json', inputs.working-directory)) }}
+        restore-keys: |
+          ${{ runner.os }}-php${{ inputs.php-version }}-${{ inputs.working-directory }}-
+
+    - name: Composer install
+      if: steps.composer-cache.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: composer install ${{ inputs.composer-flags }}

@@ -1,0 +1,21 @@
+includes:
+    - vendor/phpstan/phpstan-strict-rules/rules.neon
+    - vendor/phpstan/phpstan-deprecation-rules/rules.neon
+    - vendor/phpstan/phpstan-phpunit/extension.neon
+    - vendor/phpstan/phpstan-phpunit/rules.neon
+
+parameters:
+    level: 10
+    paths:
+        - src
+        - tests
+    treatPhpDocTypesAsCertain: false
+    checkUninitializedProperties: true
+    checkBenevolentUnionTypes: true
+    reportUnmatchedIgnoredErrors: true
+    tmpDir: build/phpstan
+    parallel:
+        maximumNumberOfProcesses: 4
+
+    excludePaths:
+        - tests/Fixtures/*

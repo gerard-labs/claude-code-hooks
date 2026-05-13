@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# SEC-10 — every `uses: <action>@<ref>` in GitHub workflows must pin to a 40-hex SHA.
+# Tag references (@v1, @main, @<short-sha>) are blocked: GitHub mutates them silently
+# on upstream releases or compromise. Mode-pinned SHA is the supply-chain anchor.
+#
+# Usage: bin/ci/sha-pin-guard [<dir-or-file>...]
+#        Defaults to .github/workflows
+set -euo pipefail
+
+declare -a TARGETS
+if [ "$#" -eq 0 ]; then
+    TARGETS=(.github/workflows)
+else
+    TARGETS=("$@")
+fi
+
+declare -a FILES
+while IFS= read -r -d '' f; do
+    FILES+=("$f")
+done < <(find "${TARGETS[@]}" -type f \( -name '*.yml' -o -name '*.yaml' \) -print0 2>/dev/null)
+
+if [ "${#FILES[@]}" -eq 0 ]; then
+    echo "::warning::sha-pin-guard found no workflow files under ${TARGETS[*]}"
+    exit 0
+fi
+
+# `uses: actions/foo@<ref>` where <ref> is NOT a 40-char hex string is forbidden.
+# Local references (`./.github/...`) are skipped.
+OFFENDERS=$(grep -nP '^\s*-?\s*uses:\s*(?!\.\/)[^@\s]+@(?!([0-9a-f]{40})\b)' "${FILES[@]}" || true)
+
+if [ -n "$OFFENDERS" ]; then
+    echo "::error::SEC-10 — actions must be pinned by 40-hex SHA"
+    echo "$OFFENDERS"
+    exit 1
+fi

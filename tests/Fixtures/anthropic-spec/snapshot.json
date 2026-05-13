@@ -1,0 +1,183 @@
+{
+    "events": {
+        "ConfigChange": {
+            "decision_fields": [],
+            "family": "ctx",
+            "input_fields": [],
+            "matchers": []
+        },
+        "CwdChanged": {
+            "decision_fields": [],
+            "family": "ctx",
+            "input_fields": [],
+            "matchers": []
+        },
+        "Elicitation": {
+            "decision_fields": [],
+            "family": "perm",
+            "input_fields": [],
+            "matchers": []
+        },
+        "ElicitationResult": {
+            "decision_fields": [],
+            "family": "perm",
+            "input_fields": [],
+            "matchers": []
+        },
+        "FileChanged": {
+            "decision_fields": [],
+            "family": "ctx",
+            "input_fields": [],
+            "matchers": []
+        },
+        "InstructionsLoaded": {
+            "decision_fields": [],
+            "family": "ctx",
+            "input_fields": [],
+            "matchers": []
+        },
+        "Notification": {
+            "decision_fields": [],
+            "family": "perm",
+            "input_fields": [],
+            "matchers": []
+        },
+        "PermissionDenied": {
+            "decision_fields": [],
+            "family": "perm",
+            "input_fields": [],
+            "matchers": []
+        },
+        "PermissionRequest": {
+            "decision_fields": [],
+            "family": "perm",
+            "input_fields": [],
+            "matchers": []
+        },
+        "PostCompact": {
+            "decision_fields": [],
+            "family": "compact",
+            "input_fields": [],
+            "matchers": []
+        },
+        "PostToolBatch": {
+            "decision_fields": [],
+            "family": "tool",
+            "input_fields": [],
+            "matchers": []
+        },
+        "PostToolUse": {
+            "decision_fields": [],
+            "family": "tool",
+            "input_fields": [],
+            "matchers": []
+        },
+        "PostToolUseFailure": {
+            "decision_fields": [],
+            "family": "tool",
+            "input_fields": [],
+            "matchers": []
+        },
+        "PreCompact": {
+            "decision_fields": [],
+            "family": "compact",
+            "input_fields": [],
+            "matchers": []
+        },
+        "PreToolUse": {
+            "decision_fields": [],
+            "family": "tool",
+            "input_fields": [],
+            "matchers": []
+        },
+        "SessionEnd": {
+            "decision_fields": [],
+            "family": "session",
+            "input_fields": [],
+            "matchers": []
+        },
+        "SessionStart": {
+            "decision_fields": [],
+            "family": "session",
+            "input_fields": [],
+            "matchers": []
+        },
+        "Setup": {
+            "decision_fields": [],
+            "family": "session",
+            "input_fields": [],
+            "matchers": []
+        },
+        "Stop": {
+            "decision_fields": [],
+            "family": "turn",
+            "input_fields": [],
+            "matchers": []
+        },
+        "StopFailure": {
+            "decision_fields": [],
+            "family": "turn",
+            "input_fields": [],
+            "matchers": []
+        },
+        "SubagentStart": {
+            "decision_fields": [],
+            "family": "turn",
+            "input_fields": [],
+            "matchers": []
+        },
+        "SubagentStop": {
+            "decision_fields": [],
+            "family": "turn",
+            "input_fields": [],
+            "matchers": []
+        },
+        "TaskCompleted": {
+            "decision_fields": [],
+            "family": "team",
+            "input_fields": [],
+            "matchers": []
+        },
+        "TaskCreated": {
+            "decision_fields": [],
+            "family": "team",
+            "input_fields": [],
+            "matchers": []
+        },
+        "TeammateIdle": {
+            "decision_fields": [],
+            "family": "team",
+            "input_fields": [],
+            "matchers": []
+        },
+        "UserPromptExpansion": {
+            "decision_fields": [],
+            "family": "turn",
+            "input_fields": [],
+            "matchers": []
+        },
+        "UserPromptSubmit": {
+            "decision_fields": [],
+            "family": "turn",
+            "input_fields": [],
+            "matchers": []
+        },
+        "WorktreeCreate": {
+            "decision_fields": [],
+            "family": "ctx",
+            "input_fields": [],
+            "matchers": []
+        },
+        "WorktreeRemove": {
+            "decision_fields": [],
+            "family": "ctx",
+            "input_fields": [],
+            "matchers": []
+        }
+    },
+    "fetched_at": "2026-05-02T06:50:30Z",
+    "source_urls": [
+        "https://code.claude.com/docs/en/hooks"
+    ],
+    "version": "2026-05-02"
+}
