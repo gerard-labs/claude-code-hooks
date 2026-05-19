@@ -35,7 +35,7 @@
         "ergebnis/composer-normalize": "^2.45",
         "ergebnis/phpstan-rules": "^2.0",
         "friendsofphp/php-cs-fixer": "^3.65",
-        "infection/infection": "^0.30 || ^0.31 || ^0.32",
+        "infection/infection": "^0.30 || ^0.31 || ^0.32 || ^0.33",
         "maglnet/composer-require-checker": "^4.16",
         "phpstan/phpstan": "^2.0",
         "phpstan/phpstan-deprecation-rules": "^2.0",
